@@ -9,13 +9,16 @@
 <body>
     <h1>Hello world</h1>
     
-    <form hx-post="/hello" hx-target="#response">
-        <input 
-            type="text" 
-            name="name" 
-            placeholder="Enter your name" 
-            required
-        />
+    <form hx-post="/off-api-food-search" hx-target="#response">
+        <label>
+            Search for a food
+            <input 
+                type="text" 
+                name="food" 
+                placeholder="Enter a food" 
+                required
+            />
+        </label>
         <button type="submit">Say Hello</button>
     </form>
     

@@ -17,12 +17,18 @@ async def get_home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 
-@app.post("/hello", response_class=HTMLResponse)
-async def hello(request: Request):
-    """Endpoint that HTMX will call"""
+@app.post("/off-api-food-search", response_class=HTMLResponse)
+async def off_api_food_search(request: Request):
+    """Search for packaged food using the open food facts api"""
     form_data = await request.form()
-    name_value = form_data.get("name", "World")
-    return f"<p>Hello, {name_value}!</p>"
+
+    food_value = form_data.get("food")
+
+    context = {
+        "food": food_value,
+    }
+
+    return templates.TemplateResponse(request=request, name="food-search-results.html", context=context)
 
 
 def run():
