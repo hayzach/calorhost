@@ -1,5 +1,9 @@
 <p>Searching for {{ food_name }}!</p>
 
 {% for result in food_results %}
-    <li>information about: {{ result }}</li>
+    <li>name: {{ result.name }}</li>
+    <li>calories: {{ result.calories }}</li>
+    <li>protein: {{ result.protein }}</li>
+    <li>carbohydrates: {{ result.carbohydrates }}</li>
+    <li>fats: {{ result.fats }}</li>
 {% endfor %}
