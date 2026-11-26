@@ -10,7 +10,9 @@ dependencies = [
     "uvicorn",
     "jinja2",
     "openfoodfacts",
-    "python-multipart==0.0.12"
+    "requests",
+    "python-multipart==0.0.12",
+    "structlog"
 ]
 
 [dependency-groups]
