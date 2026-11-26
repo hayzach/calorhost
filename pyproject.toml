@@ -49,11 +49,13 @@ exclude = [
     "docs",
 ]
 lint.select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "S",  # flake8-bandit - we must ignore these rules in tests
-    "C",  # flake8-comprehensions
-    "B",  # flake8-bugbear
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "G",   # flake8-logging-format
+    "PIE", # flake8-pie
+    "I",   # isort
 ]

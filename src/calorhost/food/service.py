@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 
-from openfoodfacts import API as OffApi
+from openfoodfacts import API as OFF_API
 from openfoodfacts import Environment
 
 
 class FoodService:
     """Service for interacting with data source to search for foods"""
 
-    api: OffApi
+    api: OFF_API
 
     def __init__(self):
-        self.api = OffApi(user_agent="CalorHost", environment=Environment.org)
+        self.api = OFF_API(user_agent="CalorHost", environment=Environment.org)
 
     def text_search(self, name: str) -> list[Food]:
         """Search open food facts api for a list of foods like 'name'"""
