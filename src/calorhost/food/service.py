@@ -1,119 +1,93 @@
-import logging
 from dataclasses import dataclass
 from typing import Any
 
 import requests
-from openfoodfacts import API as OFF_API
-from openfoodfacts import APIVersion, Country, Environment
 
-SEARCH_API_URL = "https://search.openfoodfacts.org/search"
-PRODUCT_SEARCH_API_URL = "https://world.openfoodfacts.org/api/v2/search"
-USER_AGENT = "CalorHost/0.1.0"
-REQUEST_TIMEOUT = 10
-PRODUCT_DETAIL_FIELDS = (
-    "code",
-    "product_name",
-    "product_name_en",
-    "nutriments",
-    "serving_size",
-    "serving_quantity",
-    "serving_quantity_unit",
-)
-logger = logging.getLogger(__name__)
+from ..config import Config
+
+config = Config()
 
 
 class FoodService:
     """Service for interacting with data source to search for foods"""
 
-    api: OFF_API
-
-    def __init__(self) -> None:
-        self.api = OFF_API(
-            user_agent=USER_AGENT,
-            environment=Environment.org,
-            version=APIVersion.v3,
-            country=Country.au,
-        )
-
     def text_search(self, name: str) -> list[Food]:
         """Search Open Food Facts using Search-a-licious."""
+        search_query = (
+            f'countries:"en:{config.country}" AND ({name}) '
+            "AND (nutriments.energy-kcal_100g:[* TO *] OR nutriments.energy-kj_100g:[* TO *]) "
+            "AND nutriments.proteins_100g:[* TO *] "
+            "AND nutriments.carbohydrates_100g:[* TO *] "
+            "AND nutriments.fat_100g:[* TO *]"
+        )
+
         response = requests.post(
-            SEARCH_API_URL,
-            headers={"User-Agent": USER_AGENT},
+            config.search_api_url,
+            headers={"User-Agent": config.user_agent},
             json={
-                "q": f'countries_tags:"en:australia" AND ({name})',
+                "q": search_query,
                 "page": 1,
                 "page_size": 20,
                 "langs": ["en"],
                 "boost_phrase": True,
-                "fields": ["code", "product_name", "product_name_en", "nutriments"],
+                "fields": [
+                    "code",
+                    "product_name",
+                    "product_name_en",
+                    "nutriments",
+                    "serving_quantity",
+                    "serving_quantity_unit",
+                ],
             },
-            timeout=REQUEST_TIMEOUT,
+            timeout=10,
         )
+
         response.raise_for_status()
         hits = response.json().get("hits", [])
 
-        # Search-a-licious is optimized for discovery and may not index serving
-        # nutrition fields. Hydrate its hits in one request to preserve the
-        # serving-level values previously returned by Product Opener.
-        products_by_code = self._fetch_product_details(hits)
-
         food_results: list[Food] = []
         for hit in hits:
-            product = products_by_code.get(str(hit.get("code", "")), hit)
-            nutriments = product.get("nutriments") or {}
+            nutriments = hit.get("nutriments") or {}
+            serving_quantity = hit.get("serving_quantity")
 
             food = Food(
-                name=product.get("product_name_en") or product.get("product_name", "unknown"),
-                calories=self._nutriment_value(nutriments, "energy-kcal"),
-                protein=self._nutriment_value(nutriments, "proteins"),
-                carbohydrates=self._nutriment_value(nutriments, "carbohydrates"),
-                fats=self._nutriment_value(nutriments, "fat"),
+                name=hit.get("product_name_en") or hit.get("product_name", "unknown"),
+                calories=self._calories_value(nutriments, serving_quantity),
+                protein=self._nutriment_value(nutriments, "proteins", serving_quantity),
+                carbohydrates=self._nutriment_value(nutriments, "carbohydrates", serving_quantity),
+                fats=self._nutriment_value(nutriments, "fat", serving_quantity),
+                serving_quantity=serving_quantity,
+                service_quantity_unit=hit.get("serving_quantity_unit"),
             )
 
             food_results.append(food)
 
         return food_results
 
+    @classmethod
+    def _calories_value(cls, nutriments: dict[str, Any], serving_quantity: Any) -> int:
+        """Read kcal directly, or convert the indexed kJ value to kcal."""
+        for key in ("energy-kcal_serving", "energy-kcal_100g"):
+            value = nutriments.get(key)
+            if value is not None:
+                return round(float(cls._nutriment_value(nutriments, "energy-kcal", serving_quantity)))
+        return round(float(cls._nutriment_value(nutriments, "energy-kj", serving_quantity)) / 4.184)
+
     @staticmethod
-    def _nutriment_value(nutriments: dict[str, Any], nutrient: str) -> Any:
-        """Prefer per-serving data, falling back to the indexed per-100g value."""
+    def _nutriment_value(nutriments: dict[str, Any], nutrient: str, serving_quantity: Any) -> Any:
+        """Use per-serving data or scale indexed per-100g nutrition to the serving."""
         serving_value = nutriments.get(f"{nutrient}_serving")
         if serving_value is not None:
             return serving_value
-        return nutriments.get(f"{nutrient}_100g", 0)
-
-    @staticmethod
-    def _fetch_product_details(hits: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-        """Fetch full Product Opener records for Search-a-licious hits in one call."""
-        codes = list(dict.fromkeys(str(hit["code"]) for hit in hits if hit.get("code")))
-        if not codes:
-            return {}
-
-        params: dict[str, str | int] = {
-            "code": ",".join(codes),
-            "fields": ",".join(PRODUCT_DETAIL_FIELDS),
-            "page_size": len(codes),
-        }
+        per_100g_value = nutriments.get(f"{nutrient}_100g")
+        if per_100g_value is None:
+            return 0
+        if serving_quantity is None:
+            return per_100g_value
         try:
-            response = requests.get(
-                PRODUCT_SEARCH_API_URL,
-                headers={"User-Agent": USER_AGENT},
-                params=params,
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
-            products = response.json().get("products", [])
-        except (requests.RequestException, ValueError, AttributeError) as error:
-            logger.warning("Could not hydrate Open Food Facts search results: %s", error)
-            return {}
-
-        return {str(product["code"]): product for product in products if product.get("code")}
-
-    # def label_search(self, label: str) -> Food:
-    #     product = self.api.product.get(label)
-    #
-    #     return product
+            return float(per_100g_value) * float(serving_quantity) / 100
+        except TypeError, ValueError:
+            return per_100g_value
 
 
 @dataclass
