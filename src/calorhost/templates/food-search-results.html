@@ -6,4 +6,13 @@
     <li>protein: {{ result.protein }}</li>
     <li>carbohydrates: {{ result.carbohydrates }}</li>
     <li>fats: {{ result.fats }}</li>
+    <li>nutrition basis:
+        {% if result.serving_quantity is none %}
+            per 100 g
+        {% elif result.service_quantity_unit %}
+            per {{ result.serving_quantity }} {{ result.service_quantity_unit }}
+        {% else %}
+            per {{ result.serving_quantity }} (unit not provided)
+        {% endif %}
+    </li>
 {% endfor %}
