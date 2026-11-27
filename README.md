@@ -12,6 +12,7 @@ A self-hosted calorie/macro tracker web app
 | Database access         | SQLAlchemy, with Alembic migrations                     |
 | External food data      | Open Food Facts behind an application service/client    |
 | Packaging/configuration | `pyproject.toml`/`uv`; environment-driven configuration |
+| Testing                 | `pytest`                                                |
 
 ## Documentation
 
@@ -23,4 +24,4 @@ A self-hosted calorie/macro tracker web app
 
 - Python 3.14+; use `uv sync` to install dependencies.
 - Run the app with `uv run calorhost` (`src/calorhost/main.py`, binds to `127.0.0.1:8000`).
-- Quality checks: `uv run ruff check src`, `uv run ruff format src` and `uv run mypy src`
+- Quality checks: `uv run ruff check src`, `uv run ruff format src`, `uv run mypy src` and `uv run pytest`.
