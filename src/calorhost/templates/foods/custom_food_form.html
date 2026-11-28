@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - CalorHost</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+    <main>
+        <h1>{{ title }}</h1>
+        <p><a href="/foods/custom">Back to custom foods</a></p>
+        {% include "foods/custom_food_form_fields.html" %}
+    </main>
+    <script>
+        document.body.addEventListener("htmx:beforeSwap", (event) => {
+            if (event.detail.xhr.status === 422) {
+                event.detail.shouldSwap = true;
+                event.detail.isError = false;
+            }
+        });
+    </script>
+</body>
+</html>

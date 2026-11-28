@@ -11,10 +11,8 @@ class LogLevel(Enum):
     DEBUG = logging.DEBUG
 
 
-class Config:
-    """
-    Base configuration class for the application, used to store env variables
-    """
+class AppConfig:
+    """Application configuration sourced from environment variables."""
 
     @property
     def log_level(self) -> LogLevel:
@@ -32,3 +30,13 @@ class Config:
     @property
     def country(self) -> str:
         return os.environ.get("COUNTRY", "australia")
+
+    @property
+    def database_url(self) -> str:
+        """Return the configured SQLite database URL."""
+        return os.environ.get("DATABASE_URL", "sqlite:////var/lib/calorhost/calorhost.db")
+
+    @property
+    def default_user_id(self) -> str:
+        """Return the stable ID of the single default user."""
+        return "00000000-0000-0000-0000-000000000001"

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom foods - CalorHost</title>
+</head>
+<body>
+    <main>
+        <h1>Custom foods</h1>
+        <p><a href="/">Home</a></p>
+        <p><a href="/foods/custom/new">Create custom food</a></p>
+
+        {% if foods %}
+            <ul>
+                {% for food in foods %}
+                    <li>
+                        <h2>{{ food.name }}</h2>
+                        <ul>
+                            {% for basis in food.nutrition_bases %}
+                                <li>
+                                    {% if basis.kind.value == "mass" %}
+                                        Per 100 g
+                                    {% else %}
+                                        Per serving
+                                    {% endif %}
+                                    {% if basis.serving_size %}
+                                        (one serving is {{ basis.serving_size.quantity }} {{ basis.serving_size.unit.value }})
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <a href="/foods/custom/{{ food.id }}/edit">Edit</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No custom foods yet.</p>
+        {% endif %}
+    </main>
+</body>
+</html>

@@ -1,16 +1,14 @@
-from pathlib import Path
-
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
+from .food.custom_food_routes import router as custom_food_router
 from .food.service import FoodService
+from .templates import templates
 
 app = FastAPI()
 
-TEMPLATES_DIR = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+app.include_router(custom_food_router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -60,6 +58,3 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
-
-
-# "9345105000809"

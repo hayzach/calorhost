@@ -1,0 +1,68 @@
+<form
+    id="custom-food-form"
+    {% if food_id %}
+        hx-patch="/foods/custom/{{ food_id }}"
+        hx-target="#custom-food-form"
+        hx-swap="outerHTML"
+    {% else %}
+        method="post"
+        action="/foods/custom"
+    {% endif %}
+>
+    <label for="name">Food name</label>
+    <input id="name" name="name" type="text" required value="{{ form_values.get('name', '') }}">
+    {% if field_errors.get("name") %}<p role="alert">{{ field_errors["name"] }}</p>{% endif %}
+
+    {% if field_errors.get("nutrition") %}<p role="alert">{{ field_errors["nutrition"] }}</p>{% endif %}
+    {% if success_message %}<p role="status">{{ success_message }}</p>{% endif %}
+    <p>Enter energy, protein, fat, and carbohydrates together on at least one basis. Zero is accepted.</p>
+
+    {% for prefix, heading in [("per_100g", "Per 100 g"), ("per_serving", "Per serving")] %}
+        <fieldset>
+            <legend>{{ heading }}</legend>
+            {% for nutrient in nutrients %}
+                {% set field_name = prefix ~ "_" ~ nutrient.code.value %}
+                {% set unit_field = prefix ~ "_energy_unit" %}
+                <label for="{{ field_name }}">{{ nutrient.name }} ({{ nutrient.canonical_unit }})</label>
+                <input
+                    id="{{ field_name }}"
+                    name="{{ field_name }}"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value="{{ form_values.get(field_name, '') }}"
+                >
+                {% if nutrient.code.value == "energy" %}
+                    <select name="{{ unit_field }}" aria-label="Energy unit for {{ heading }}">
+                        <option value="kcal" {% if form_values.get(unit_field, "kcal") == "kcal" %}selected{% endif %}>kcal</option>
+                        <option value="kJ" {% if form_values.get(unit_field, "kcal") == "kJ" %}selected{% endif %}>kJ</option>
+                    </select>
+                    {% if field_errors.get(unit_field) %}<p role="alert">{{ field_errors[unit_field] }}</p>{% endif %}
+                {% endif %}
+                {% if field_errors.get(field_name) %}<p role="alert">{{ field_errors[field_name] }}</p>{% endif %}
+            {% endfor %}
+        </fieldset>
+    {% endfor %}
+
+    <fieldset>
+        <legend>Serving conversion (optional)</legend>
+        <p>If known, enter the mass or volume of one serving. Grams and millilitres are not interchangeable.</p>
+        <label for="serving_size">Serving size</label>
+        <input
+            id="serving_size"
+            name="serving_size"
+            type="number"
+            min="0.000001"
+            step="any"
+            value="{{ form_values.get('serving_size', '') }}"
+        >
+        <select name="serving_unit" aria-label="Serving size unit">
+            <option value="g" {% if form_values.get("serving_unit", "g") == "g" %}selected{% endif %}>g</option>
+            <option value="ml" {% if form_values.get("serving_unit", "g") == "ml" %}selected{% endif %}>ml</option>
+        </select>
+        {% if field_errors.get("serving_size") %}<p role="alert">{{ field_errors["serving_size"] }}</p>{% endif %}
+        {% if field_errors.get("serving_unit") %}<p role="alert">{{ field_errors["serving_unit"] }}</p>{% endif %}
+    </fieldset>
+
+    <button type="submit">Save food</button>
+</form>

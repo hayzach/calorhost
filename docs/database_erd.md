@@ -1,6 +1,6 @@
 # Calorie Tracker Database ERD
 
-This is an SQLite-oriented initial design for the single-user MVP
+This is an SQLite-oriented initial design for the single-user MVP.
 
 ## Design notes
 
@@ -18,13 +18,13 @@ This is an SQLite-oriented initial design for the single-user MVP
   not a timestamp.
 - Use the same nutrient model for all nutrients. A missing
   `FOOD_NUTRIENT_VALUES` row means the value is unknown; a row with value `0`
-  means zero is known. Require energy, protein, fat, and carbohydrates together
-  on at least one basis for every usable food. Zero is valid for all four.
+  means zero is known. Require energy, protein, fat, and carbohydrates on every
+  stored nutrition basis. Zero is valid for all four.
 - Accept energy in kcal or kJ and normalize it to the canonical unit, kcal.
   Missing values for all other nutrients contribute zero to calculations, while
   remaining distinct from known zero in storage.
-- Enforce required nutrient completeness in application validation because it
-  spans nutrition bases and nutrient-value rows.
+- Enforce required nutrient completeness for each basis in application
+  validation because it spans nutrition bases and nutrient-value rows.
 - Store a per-100-g basis as `basis_quantity = 100`, `basis_unit = g`, and a
   per-serving basis as `basis_quantity = 1`, `basis_unit = serving`. When known,
   `serving_equivalent_quantity` and `serving_equivalent_unit` record the serving's
@@ -44,7 +44,7 @@ This is an SQLite-oriented initial design for the single-user MVP
   existing snapshot; selecting a different food uses current data.
 - Aggregate dashboard meal and daily totals from `MEAL_ENTRY_NUTRIENTS` by user,
   date, meal, and nutrient; no separate totals are needed.
-- Index `FOODS.name` and `FOODS.brand`, and add a SQLite partial unique index on
+- Index `FOODS.name`, and add a SQLite partial unique index on
   `(source_name, source_product_id)` where `source_product_id IS NOT NULL`.
 - Require at least one of `servings_count` and `finished_weight_g` in each
   recipe, and require each provided value to be positive. Either value supports
@@ -70,7 +70,7 @@ erDiagram
         text id PK "UUID"
         text created_at "ISO-8601 UTC"
         text timezone "browser-detected; user-editable"
-        text weight_display_unit "kg or lb; body-weight input and display only"
+        text weight_display_unit "kg or lbs; body-weight input and display only"
     }
 
     FOODS {
@@ -78,7 +78,6 @@ erDiagram
         text owner_user_id FK
         text created_at "ISO-8601 UTC"
         text updated_at "ISO-8601 UTC"
-        text source_updated_at "nullable; ISO-8601 UTC"
         text kind "openfoodfacts, custom, recipe"
         text name
         text brand "nullable"
@@ -90,7 +89,6 @@ erDiagram
     NUTRIENTS {
         text code PK
         text name
-        text category "energy, macro, micro, other"
         text canonical_unit "kcal, g, mg, ug, etc"
         integer display_order
     }
@@ -103,8 +101,6 @@ erDiagram
         text basis_unit "g, ml, serving"
         integer serving_equivalent_quantity "nullable; scaled by 1,000,000"
         text serving_equivalent_unit "nullable; g or ml"
-        text source_basis_label "nullable; original label text"
-        integer is_primary "boolean: 0 or 1"
     }
 
     FOOD_NUTRIENT_VALUES {
