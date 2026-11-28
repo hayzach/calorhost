@@ -6,6 +6,15 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import uuid4
 
+from ..app_config import AppConfig
+
+app_config = AppConfig()
+
+
+def value_limit_error_message(maximum: Decimal) -> str:
+    """Describe the maximum value supported by food storage."""
+    return f"Enter a value no greater than {maximum:,f}."
+
 
 class FoodKind(StrEnum):
     """Supported food catalog kinds."""
@@ -169,6 +178,8 @@ class Food:
                 quantity = basis.serving_size.quantity
                 if not quantity.is_finite() or quantity <= 0:
                     field_errors["serving_size"] = "Serving size must be greater than zero."
+                elif quantity > app_config.max_food_value:
+                    field_errors["serving_size"] = value_limit_error_message(app_config.max_food_value)
 
             nutrient_codes = [item.nutrient for item in basis.values]
             if len(nutrient_codes) != len(set(nutrient_codes)):
@@ -179,6 +190,8 @@ class Food:
             for item in basis.values:
                 if not item.value.is_finite() or item.value < 0:
                     field_errors[item.nutrient.value] = "Nutrient values must be zero or greater."
+                elif item.value > app_config.max_food_value:
+                    field_errors[item.nutrient.value] = value_limit_error_message(app_config.max_food_value)
 
         # Each basis can include a serving size. If one says a serving is 30 g and another says
         # it's 40 g, converting a logged amount between servings and grams becomes ambiguous.

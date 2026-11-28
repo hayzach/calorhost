@@ -65,6 +65,23 @@ def test_incomplete_required_nutrients_return_form_errors(client: TestClient) ->
     assert 'value="Incomplete"' in response.text
 
 
+def test_create_rejects_values_outside_storage_range(client: TestClient) -> None:
+    """Values that cannot fit the database are returned as form validation errors."""
+    response = client.post(
+        "/foods/custom",
+        data={
+            "name": "Impossible energy",
+            "per_100g_energy": "10000000000000",
+            "per_100g_protein": "1",
+            "per_100g_fat": "1",
+            "per_100g_carbohydrates": "1",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "Enter a value no greater than 9,223,372,036,854.775807." in response.text
+
+
 def test_new_custom_food_form_shows_nutrition_options(client: TestClient) -> None:
     """The blank custom-food form shows its available nutrition options."""
     response = client.get("/foods/custom/new")

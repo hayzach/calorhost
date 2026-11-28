@@ -7,6 +7,7 @@ import pytest
 
 from calorhost.app_config import AppConfig
 from calorhost.food.domain import (
+    AmountUnit,
     BasisKind,
     CustomFoodInput,
     Food,
@@ -14,6 +15,7 @@ from calorhost.food.domain import (
     NutrientAmount,
     NutrientCode,
     NutritionBasis,
+    ServingSize,
 )
 
 app_config = AppConfig()
@@ -58,3 +60,33 @@ def test_custom_food_requires_a_name(custom_food_input: CustomFoodInput) -> None
         Food.create_custom(app_config.default_user_id, replace(custom_food_input, name="  "))
 
     assert error.value.field_errors["name"] == "Enter a food name."
+
+
+def test_custom_food_rejects_values_that_exceed_storage_range(custom_food_input: CustomFoodInput) -> None:
+    """Nutrient values beyond the scaled-integer range are rejected before persistence."""
+    basis = custom_food_input.nutrition_bases[0]
+    oversized_energy = replace(basis.values[0], value=app_config.max_food_value + Decimal("0.000001"))
+    food_input = replace(
+        custom_food_input,
+        nutrition_bases=(replace(basis, values=(oversized_energy, *basis.values[1:])),),
+    )
+
+    with pytest.raises(FoodValidationError) as error:
+        Food.create_custom(app_config.default_user_id, food_input)
+
+    assert error.value.field_errors[NutrientCode.ENERGY.value] == (
+        f"Enter a value no greater than {app_config.max_food_value:,f}."
+    )
+
+
+def test_custom_food_rejects_oversized_serving_size(custom_food_input: CustomFoodInput) -> None:
+    """Serving sizes beyond the scaled-integer range are rejected."""
+    basis = replace(
+        custom_food_input.nutrition_bases[0],
+        serving_size=ServingSize(app_config.max_food_value + Decimal("0.000001"), AmountUnit.GRAM),
+    )
+
+    with pytest.raises(FoodValidationError) as error:
+        Food.create_custom(app_config.default_user_id, replace(custom_food_input, nutrition_bases=(basis,)))
+
+    assert error.value.field_errors["serving_size"] == f"Enter a value no greater than {app_config.max_food_value:,f}."

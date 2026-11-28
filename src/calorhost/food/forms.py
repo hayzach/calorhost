@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 from decimal import Decimal, InvalidOperation
 
+from ..app_config import AppConfig
 from .domain import (
     NUTRIENT_DEFINITIONS,
     AmountUnit,
@@ -14,7 +15,10 @@ from .domain import (
     NutrientCode,
     NutritionBasis,
     ServingSize,
+    value_limit_error_message,
 )
+
+app_config = AppConfig()
 
 _ENERGY_CONVERSION = Decimal("4.184")
 _ENERGY_UNITS = {"kcal", "kJ"}
@@ -58,8 +62,15 @@ def parse_custom_food_form(values: Mapping[str, str]) -> CustomFoodInput:
                 if energy_unit not in _ENERGY_UNITS:
                     errors[f"{prefix}_energy_unit"] = "Choose kcal or kJ."
                     continue
+                maximum_value = app_config.max_food_value * (_ENERGY_CONVERSION if energy_unit == "kJ" else 1)
+                if value > maximum_value:
+                    errors[field_name] = value_limit_error_message(maximum_value)
+                    continue
                 if energy_unit == "kJ":
                     value /= _ENERGY_CONVERSION
+            elif value > app_config.max_food_value:
+                errors[field_name] = value_limit_error_message(app_config.max_food_value)
+                continue
 
             nutrient_values.append(NutrientAmount(nutrient_definition.code, value))
 
@@ -106,6 +117,9 @@ def _parse_serving_size(values: Mapping[str, str]) -> tuple[ServingSize | None, 
         return None, errors
     if not quantity.is_finite() or quantity <= 0:
         errors["serving_size"] = "Serving size must be greater than zero."
+        return None, errors
+    if quantity > app_config.max_food_value:
+        errors["serving_size"] = value_limit_error_message(app_config.max_food_value)
         return None, errors
     if raw_unit not in {AmountUnit.GRAM.value, AmountUnit.MILLILITRE.value}:
         errors["serving_unit"] = "Choose grams or millilitres."
