@@ -1,0 +1,1 @@
+"""Food catalog functionality."""

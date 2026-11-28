@@ -11,7 +11,8 @@
   present together in at least one nutrition basis. Accept energy in kcal or kJ
   and store it as kcal. Zero is valid for all four values.
 - Store each food's name, source, optional barcode, and nutrition values with
-  their basis (e.g., per 100 g or per serving). Support conversions when the
+  their basis (e.g., per 100 g or per serving). Every basis saved for a food must
+  include energy, protein, fat, and carbohydrates. Support conversions when the
   serving size is known.
 - Prefer per-100-g values in search results. Show serving data too when
   available, or use it when no per-100-g basis exists. Let users choose the
@@ -22,7 +23,8 @@
   is later deleted.
 - Keep saved foods available when OFF is unavailable.
 - Allow users to create and edit custom foods independently of meal logging.
-  Custom foods must have energy, protein, fat, and carbohydrates.
+  Every nutrition basis for a custom food must have energy, protein, fat, and
+  carbohydrates.
 - Distinguish missing nutrition data from a measured value of zero. Missing
   values for other nutrients contribute zero to calculations and display as not
   provided in food details.
@@ -97,3 +99,4 @@
   conversions to grams or millilitres in a `FOOD_PORTIONS` table. Do not assume
   universal conversions.
 - Add authentication and support multiple users.
+- Light/dark mode

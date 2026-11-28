@@ -3,9 +3,9 @@ from typing import Any
 
 import requests
 
-from ..config import Config
+from ..app_config import AppConfig
 
-config = Config()
+app_config = AppConfig()
 
 
 class FoodService:
@@ -14,7 +14,7 @@ class FoodService:
     def text_search(self, name: str) -> list[Food]:
         """Search Open Food Facts using Search-a-licious."""
         search_query = (
-            f'countries:"en:{config.country}" AND ({name}) '
+            f'countries:"en:{app_config.country}" AND ({name}) '
             "AND (nutriments.energy-kcal_100g:[* TO *] OR nutriments.energy-kj_100g:[* TO *]) "
             "AND nutriments.proteins_100g:[* TO *] "
             "AND nutriments.carbohydrates_100g:[* TO *] "
@@ -22,8 +22,8 @@ class FoodService:
         )
 
         response = requests.post(
-            config.search_api_url,
-            headers={"User-Agent": config.user_agent},
+            app_config.search_api_url,
+            headers={"User-Agent": app_config.user_agent},
             json={
                 "q": search_query,
                 "page": 1,
