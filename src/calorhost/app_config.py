@@ -1,5 +1,6 @@
 import logging
 import os
+from decimal import Decimal
 from enum import Enum
 
 
@@ -35,6 +36,11 @@ class AppConfig:
     def database_url(self) -> str:
         """Return the configured SQLite database URL."""
         return os.environ.get("DATABASE_URL", "sqlite:////var/lib/calorhost/calorhost.db")
+
+    @property
+    def max_food_value(self) -> Decimal:
+        """Return the largest value representable by scaled food-value columns."""
+        return Decimal("9223372036854.775807")
 
     @property
     def default_user_id(self) -> str:

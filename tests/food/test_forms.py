@@ -4,8 +4,11 @@ from decimal import Decimal
 
 import pytest
 
+from calorhost.app_config import AppConfig
 from calorhost.food.domain import BasisKind, FoodValidationError, NutrientCode
 from calorhost.food.forms import parse_custom_food_form
+
+app_config = AppConfig()
 
 
 def test_form_parser_converts_energy_to_kcal() -> None:
@@ -82,3 +85,21 @@ def test_form_parser_rejects_invalid_serving_size() -> None:
         )
 
     assert error.value.field_errors["serving_size"] == "Serving size must be greater than zero."
+
+
+def test_form_parser_rejects_oversized_energy_before_unit_conversion() -> None:
+    """Very large kilojoule values return validation errors instead of overflowing Decimal arithmetic."""
+    with pytest.raises(FoodValidationError) as error:
+        parse_custom_food_form(
+            {
+                "name": "Rice",
+                "per_100g_energy": "1e100",
+                "per_100g_energy_unit": "kJ",
+                "per_100g_protein": "1",
+                "per_100g_fat": "1",
+                "per_100g_carbohydrates": "1",
+            }
+        )
+
+    maximum_energy_kj = app_config.max_food_value * Decimal("4.184")
+    assert error.value.field_errors["per_100g_energy"] == f"Enter a value no greater than {maximum_energy_kj:,f}."
